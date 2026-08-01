@@ -1,0 +1,86 @@
+# version: '3.8'
+services:
+  # fastapi app
+  fastAPI:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: KingsLanding_app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+      # app settings
+    environment:
+      # override just the ollama url
+      # host.docker.internal = your laptop from inside docker
+      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_HOST: redis
+      REDIS_DB: ${REDIS_DB}
+      REDIS_TTL: ${REDIS_TTL}
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # this is needed for linux to access host machine from inside docker container
+    develop:
+      watch:
+       - action: sync
+         path: ./app
+         target: /app/app
+
+       - action: sync
+         path: ./main.py
+         target: /app/main.py
+
+       - action: rebuild
+         path: ./pyproject.toml
+
+       - action: rebuild
+         path: ./uv.lock
+
+    depends_on:
+      redis:
+         condition: service_healthy
+    networks:
+      - kingslanding_network
+
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: kingslanding_redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    # writes to disk only so it servives restarts and append every secomd
+    command: >
+      redis-server
+      --appendonly yes      
+      --appendfsync everysec
+
+    healthcheck:
+      test: ["CMD", "redis-cli","-p","${REDIS_PORT}","-a","${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 4s
+      retries: 5
+      start_period: 5s
+
+    networks:
+      - kingslanding_network
+
+    restart: unless-stopped
+
+
+volumes:
+  redis_data:
+
+networks:
+  kingslanding_network:
+    driver: bridge
+
+        
+    
+      
+
