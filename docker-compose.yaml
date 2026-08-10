@@ -1,7 +1,7 @@
 # version: '3.8'
 services:
   # fastapi app
-  fastAPI:
+  fastapi:
     build:
       context: .
       dockerfile: Dockerfile
@@ -20,6 +20,7 @@ services:
       REDIS_HOST: redis
       REDIS_DB: ${REDIS_DB}
       REDIS_TTL: ${REDIS_TTL}
+      DATABASE_URL: ${DATABASE_URL}
 
     extra_hosts:
       - "host.docker.internal:host-gateway" # this is needed for linux to access host machine from inside docker container
@@ -42,6 +43,8 @@ services:
     depends_on:
       redis:
          condition: service_healthy
+      postgres:
+         condition: service_healthy
     networks:
       - kingslanding_network
 
@@ -59,9 +62,10 @@ services:
       redis-server
       --appendonly yes      
       --appendfsync everysec
+      --requirepass hello123
 
     healthcheck:
-      test: ["CMD", "redis-cli","-p","${REDIS_PORT}","-a","${REDIS_PASSWORD}", "ping"]
+      test: ["CMD-SHELL", "redis-cli -p 6379 -a hello123 ping || exit 1"]
       interval: 5s
       timeout: 4s
       retries: 5
@@ -71,10 +75,37 @@ services:
       - kingslanding_network
 
     restart: unless-stopped
+  
 
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: kingslanding_postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  
+      # this run on startup thus creating the pgvector extension and setup tables associated with storing emebdding
+      # This mechanism works by placing .sql files into a specific folder inside the container called /docker-entrypoint-initdb.d/.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s  
+
+    networks:
+      - kingslanding_network
+    
 
 volumes:
   redis_data:
+  pgdata:
 
 networks:
   kingslanding_network:
