@@ -1,6 +1,6 @@
-# AI Agent Server
+# KingsLanding AI 
 
-AI Agent Server is a FastAPI-based backend for running an extensible AI assistant that integrates a local Ollama LLM, Redis for conversational memory, and PostgreSQL (pgvector) for storing document embeddings. The project provides endpoints for chatting with the agent, managing chat history, and uploading documents which are chunked, embedded, and indexed for semantic search.
+AI Agent Server is a FastAPI-based backend for running an extensible AI assistant that integrates a local Ollama LLM, Redis for memory, and PostgreSQL (pgvector) for storing document embeddings. The project provides endpoints for chatting with the agent, managing chat history, and uploading documents which are chunked, embedded, and indexed for semantic search.
 
 Key features
 
@@ -10,7 +10,7 @@ Key features
 - PostgreSQL with pgvector for storing embeddings and fast semantic search
 - File upload pipeline: save -> split -> embed -> store
 - Mode-based behavior: general, coding, research (tools and prompts vary by mode)
-- Docker Compose configuration with Redis and Postgres (pgvector image) included
+- Docker Compose configuration with Redis, fats API and Postgres (pgvector image) included
 
 Repository structure (important files)
 
@@ -35,12 +35,12 @@ Quickstart (Development)
 
 2. Provide configuration via a .env file in the repository root. At minimum set:
 
-   DATABASE_URL=postgresql+asyncpg://<user>:<password>@<host>:<port>/<db>
+   DATABASE_URL=postgresql+psycopg://<user>:<password>@<host>:<port>/<db>
    REDIS_PASSWORD=hello123
    REDIS_HOST=redis
    REDIS_PORT=6379
    REDIS_DB=0
-   REDIS_TTL=604800
+   REDIS_TTL=604800 #a week
    OLLAMA_BASE_URL=http://127.0.0.1:11434
    OLLAMA_MODEL=llama3.2:3b
    API_KEY=<your-api-key>
@@ -120,7 +120,7 @@ This project is licensed under the MIT License. See LICENSE for details.
 
 Contributing / Contact
 
-Main contributor: Eugene Kuria Maina
+contributor: Eugene Kuria Maina
 
 If you want to contribute, open an issue or a pull request describing your changes. For local development, follow the Quickstart steps above and ensure services (Redis, Postgres, Ollama) are reachable.
 
