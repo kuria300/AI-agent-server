@@ -72,4 +72,122 @@ history_messages_key="chat_history": This is where the backpack stuffs all the o
 
 
 LangChain separates this out because of runtime flexibility. Everything inside the configurable dictionary is meant for dynamic data that changes on the fly for every single user request—like a user's session_id, or dynamically swapping out an AI model variant.
+
+
+
+
+
+
+When the LLM decides which tool to call, it never sees your Python code. It only sees what @tool generates:
+{
+  "name": "get_weather",
+  "description": "Fetch current weather information for a specified location. LOCATION INPUT FORMAT: Pass as 'city name' or 'city name, state code, country code'...",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "location": {
+        "type": "string"
+      }
+    },
+    "required": ["location"]
+  }
+}
+
+
+
+
+so when u upload pdf it gets saved into uploads(just to make sure pdf is safely saved)   since a pdf is too big for an AI to read all at once, it would get confused or un out of memory since even my context is 2048 so it splits into chunks like chopping a page at a time of a 500 page book.
+noe i have chunks sine comp cant understand human words we turn each chunk into an embedding- a map of meaning long list of gps umbers that tell u exactly where paragraph belons on map of meaning...we save embedding to pg vector
+"""
+
+
+
+"""
+Think of an Embedding as a "Recipe"Imagine you want a computer to understand the flavor of different foods. 
+A computer cannot taste food, so you have to give it a list of numbers representing the ingredients.
+If you use a simple 3-dimension recipe, you can only track 3 flavors:SweetnessSaltinessSpicinessAn Apple might look like this: [0.9, 0.0, 0.0] (Very sweet, not salty, not spicy).A Potato Chip might look like this: [0.0, 0.8, 0.0] (Not sweet, very salty, not spicy).Because those lists of numbers are different, 
+the computer can tell that an apple and a potato chip taste completely different.What is a 768-Dimension Recipe?Human language is much more complicated than basic food flavors. A paragraph of text can talk about politics, coding, emotions, space, history, or medical advice all at once.To capture the exact "flavor" of a paragraph's meaning, a local AI model like nomic-embed-text doesn't just use 3 ingredients. 
+It uses a massive recipe with 768 unique ingredients!When you pass a text chunk into the AI model, the AI looks at the words and creates a strict list of 768 precise decimals.
+Column 1 measures how much the text relates to technology.Column 20 measures how formal or casual the tone is.Column 500 measures if it talks about money.... and 765 other hidden linguistic traits.When the model finishes looking at a chunk, it hands you a list of 768 numbers. That list is the Embedding.
+
+The Question Gets Its Own 768 NumbersWhen a user types a question like: "What is the company's profit?", that question is also English. 
+The computer must immediately convert the question into its own list of 768 numbers using the exact same AI model.
+
+
+                  Slot 1      Slot 2      Slot 3             Slot 768
+Question Vector: [ 0.81   ,  -0.12   ,   0.45   , ... ... ,   0.02   ]
+                    ×           ×           ×                    ×
+Chunk 1 Vector:  [ 0.79   ,  -0.10   ,   0.41   , ... ... ,   0.03   ]
+
+so we add all slots and get Dot product we do cosine distnace    Distance = 1 - dot product    1-0 = 1 complet opposoiete if 1-1=0 match 
+ORDER BY embedding <=> query_embedding LIMIT 2;
+
+
+
+How IVFFlat Works: The Neighborhood Analogy 
+Imagine you have a giant city with thousands of houses (your text chunks).
+ To deliver mail quickly, you divide the city into 100 neighborhoods (which matches your lists = 100 code).
+   Each neighborhood gets a center point, like a park.When a query comes in, the database looks at the 100 parks, 
+   finds the closest one, and only searches the houses inside that single neighborhood. 
+This makes searches incredibly fast because it ignores the other 99 neighborhoods.
+To create those 100 neighborhood center points (parks), IVFFlat looks at the data using a math algorithm called K-means clustering.
+"""
+
+
+
+"""
+inold way db.session.create() this session is a helper created   
+by now we create a single factory for creating helpers and inject in route so db. create is ok still has session its just that its i njected in route
+"""
+
+
+
+
+
+"""
+ENGINE (singleton — created once)
+= the pipeline manager
+= holds a POOL of 30 connections max
+  → 10 always open (pool_size=10)
+  → 20 extra when busy (max_overflow=20)
+  → 31st request? WAITS until one frees up
+
+SESSION FACTORY (singleton — created once)
+= the helper blueprint/stamp
+= knows HOW to create helpers (sessions)
+= knows which engine/pool to use
+= never changes, just stamps out sessions
+
+SESSION (created per request — many exist at once)
+= one helper per request
+= born when request arrives (Depends(get_db))
+= dies when request finishes (async with closes it)
+= talks to DB through a pool connection
+= 100 users = 100 sessions
+
+
+100 users hit /files/upload at same time
+        ↓
+FastAPI spins up 100 async tasks
+        ↓
+Each task hits Depends(get_db)
+        ↓
+session factory stamps out 100 sessions
+        ↓
+100 sessions compete for 30 pool connections
+
+User 1-30   → grab a connection immediately ✓
+User 31-100 → wait in queue
+
+But async saves you here:
+User 1 grabs connection → starts query → hits await
+        ↓
+Python says "you're waiting? let me serve User 31"
+User 31 grabs freed connection → starts query → hits await
+        ↓
+Python switches back to User 1 → query done → returns result
+        ↓
+connection goes back to pool → User 32 grabs it
+        ↓
+keeps cycling fast — no thread blocking
 """

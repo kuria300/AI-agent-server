@@ -1,16 +1,21 @@
 from .config import settings
-from fastapi import HTTPException, Header, status
-# from fastapi.security import APIKeyHeader
+from fastapi import Request, HTTPException, status
 
-# checks header name and auto_error to false to allow us to raise a custom error
-# api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)   
-
-async def verify_api_key(api_key: str = Header(...)):
+async def verify_api_key(request: Request):
     """
-    this protects the routes by checking if aoi_key passed is present and simillar to one in backend
-
-    api_key type is str= header(...)  epilisis means the header must not be empty
+    Protects application endpoints by checking if the incoming request contains
+    the correct API key inside its headers, while safely allowing browser
+    OPTIONS preflight requests to bypass security checks.
     """
-    if api_key != settings.api_key:
 
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
+    if request.method == "OPTIONS":
+        return
+
+    x_api_key = request.headers.get("x-api-key")
+
+  
+    if not x_api_key or x_api_key != settings.api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Invalid API key"
+        )

@@ -1,0 +1,37 @@
+A learning roadmap
+
+Since you already have strong backend experience, I'd follow this sequence:
+
+Learn how to call an LLM API directly (without LangChain).
+Build a simple chat API in FastAPI.
+Learn prompt engineering and structured outputs.
+Add one custom tool (e.g., a calculator or weather function).
+Learn LangGraph for agent orchestration.
+Add memory and conversation persistence.
+Build a RAG pipeline with PostgreSQL + pgvector.
+Explore multi-agent systems only after you're comfortable with single-agent workflows.
+
+
+
+Next.js
+  ↓ POST /api/chat/  { message, user_id }
+views.py
+  ↓ validates via serializers.py
+agent.py
+  ↓ fetches history from memory.py (Redis, keyed by user)
+  ↓ fetches system prompt from prompts.py
+  ↓ passes [system prompt + history + new message] to llm.py
+llm.py
+  ↓ sends to Gemini API
+  ↑ Gemini replies
+agent.py
+  ↑ if Gemini needs a tool → calls tools.py → feeds result back to llm.py
+  ↑ saves new turn to memory.py (Redis)
+  ↑ returns final reply
+views.py
+  ↑ serializes response
+Next.js
+  ↑ displays reply
+  
+Rate limiter (Redis) sits at views.py — blocks the request
+before it even reaches agent.py if the user is over limit.
